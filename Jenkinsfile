@@ -2,10 +2,10 @@ pipeline {
     agent any
     
     environment {
-        // Variables pour Docker Hub (à configurer dans Jenkins)
-        DOCKER_HUB_REPO = 'your-dockerhub-username/react-flask-mongodb'
-        FRONTEND_IMAGE = "${DOCKER_HUB_REPO}-frontend:latest"
-        BACKEND_IMAGE = "${DOCKER_HUB_REPO}-backend:latest"
+        // IMPORTANT : Remplacez 'votre_username' par votre identifiant Docker Hub réel
+        DOCKER_USER_ID = 'zakaria227' 
+        FRONTEND_IMAGE = "${DOCKER_USER_ID}/react-flask-mongodb-frontend:latest"
+        BACKEND_IMAGE = "${DOCKER_USER_ID}/react-flask-mongodb-backend:latest"
     }
     
     stages {
@@ -27,16 +27,8 @@ pipeline {
             steps {
                 echo '🔨 Building Docker images...'
                 script {
-                    // Build frontend image
-                    sh """
-                        docker build -t ${FRONTEND_IMAGE} ./frontend
-                    """
-                    
-                    // Build backend image
-                    sh """
-                        docker build -t ${BACKEND_IMAGE} ./backend
-                    """
-                    
+                    sh "docker build -t ${FRONTEND_IMAGE} ./frontend"
+                    sh "docker build -t ${BACKEND_IMAGE} ./backend"
                     echo '✅ Docker images built successfully'
                 }
             }
@@ -44,16 +36,12 @@ pipeline {
         
         stage('Run Local (docker compose)') {
             steps {
-                echo '🚀 Starting services with docker-compose...'
+                echo '🚀 Starting services with docker compose...'
                 script {
-                    sh """
-                        docker compose down || true
-                        docker compose up -d --build
-                    """
-                    
-                    // Attendre que les services démarrent
+                    // Nettoyage avant démarrage pour éviter les conflits de noms
+                    sh "docker compose down || true"
+                    sh "docker compose up -d --build"
                     sleep(time: 10, unit: 'SECONDS')
-                    
                     echo '✅ Services started successfully'
                 }
             }
@@ -63,15 +51,20 @@ pipeline {
             steps {
                 echo '📤 Pushing images to Docker Hub...'
                 script {
+                    // Utilisation des identifiants stockés dans Jenkins
                     withCredentials([usernamePassword(credentialsId: 'zakaria227-dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                         sh """
-                            echo \$DOCKER_PASS | docker login -u \$DOCKER_USER --password-stdin
-                            docker push ${FRONTEND_IMAGE} || echo 'Frontend image push failed'
-                            docker push ${BACKEND_IMAGE} || echo 'Backend image push failed'
+                            # Connexion sécurisée
+                            echo "${DOCKER_PASS}" | docker login -u "${DOCKER_USER}" --password-stdin
+                            
+                            # Push sans le "|| echo" pour détecter les vraies erreurs
+                            docker push ${FRONTEND_IMAGE}
+                            docker push ${BACKEND_IMAGE}
+                            
                             docker logout
                         """
                     }
-                    echo '✅ Images pushed to Docker Hub'
+                    echo '✅ Images pushed to Docker Hub successfully'
                 }
             }
         }
@@ -90,4 +83,3 @@ pipeline {
         }
     }
 }
-
