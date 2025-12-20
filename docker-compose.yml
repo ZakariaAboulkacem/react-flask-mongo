@@ -29,16 +29,13 @@ services:
       - mongodb
 
   mongodb:
-    image: mongo
+    image: mongo:7
     container_name: mongodb
     restart: unless-stopped
-    command: mongod --auth
     environment:
       MONGO_INITDB_ROOT_USERNAME: zakaria
       MONGO_INITDB_ROOT_PASSWORD: admin
       MONGO_INITDB_DATABASE: flaskdb
-      MONGODB_DATA_DIR: /data/db
-      MONDODB_LOG_DIR: /dev/null
     networks:
       - backend_net
     volumes:
