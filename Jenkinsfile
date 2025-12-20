@@ -42,13 +42,13 @@ pipeline {
             }
         }
         
-        stage('Run Local (docker-compose)') {
+        stage('Run Local (docker compose)') {
             steps {
                 echo '🚀 Starting services with docker-compose...'
                 script {
                     sh """
-                        docker-compose down || true
-                        docker-compose up -d --build
+                        docker compose down || true
+                        docker compose up -d --build
                     """
                     
                     // Attendre que les services démarrent
@@ -80,7 +80,7 @@ pipeline {
     post {
         always {
             echo '🧹 Cleaning up...'
-            sh 'docker-compose down || true'
+            sh 'docker compose down || true'
         }
         success {
             echo '✅ Pipeline succeeded!'
