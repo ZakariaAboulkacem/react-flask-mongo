@@ -2,7 +2,6 @@ pipeline {
     agent any
     
     environment {
-        // IMPORTANT : Remplacez 'votre_username' par votre identifiant Docker Hub réel
         DOCKER_USER_ID = 'zakaria227' 
         FRONTEND_IMAGE = "${DOCKER_USER_ID}/react-flask-mongodb-frontend:latest"
         BACKEND_IMAGE = "${DOCKER_USER_ID}/react-flask-mongodb-backend:latest"
@@ -12,12 +11,18 @@ pipeline {
         stage('Checkout Git') {
             steps {
                 echo '📥 Pulling code from Git repository...'
+                // Cette commande récupère le code initialement
                 checkout scm
+                
                 script {
-                    try {
-                        sh 'git pull origin main'
-                    } catch (Exception e) {
-                        sh 'git pull origin master'
+                    // Utilisation des credentials pour permettre le 'git pull' manuel sur repo privé
+                    withCredentials([usernamePassword(credentialsId: 'repo_github', passwordVariable: 'GIT_PASS', usernameVariable: 'GIT_USER')]) {
+                        try {
+                            // On construit l'URL avec les identifiants pour l'authentification
+                            sh "git pull https://${GIT_USER}:${GIT_PASS}@github.com/ZakariaAboulkacem/react-flask-mongo.git main"
+                        } catch (Exception e) {
+                            sh "git pull https://${GIT_USER}:${GIT_PASS}@github.com/ZakariaAboulkacem/react-flask-mongo.git master"
+                        }
                     }
                 }
             }
@@ -38,7 +43,6 @@ pipeline {
             steps {
                 echo '🚀 Starting services with docker compose...'
                 script {
-                    // Nettoyage avant démarrage pour éviter les conflits de noms
                     sh "docker compose down || true"
                     sh "docker compose up -d --build"
                     sleep(time: 10, unit: 'SECONDS')
@@ -51,16 +55,11 @@ pipeline {
             steps {
                 echo '📤 Pushing images to Docker Hub...'
                 script {
-                    // Utilisation des identifiants stockés dans Jenkins
                     withCredentials([usernamePassword(credentialsId: 'zakaria227-dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                         sh """
-                            # Connexion sécurisée
                             echo "${DOCKER_PASS}" | docker login -u "${DOCKER_USER}" --password-stdin
-                            
-                            # Push sans le "|| echo" pour détecter les vraies erreurs
                             docker push ${FRONTEND_IMAGE}
                             docker push ${BACKEND_IMAGE}
-                            
                             docker logout
                         """
                     }
