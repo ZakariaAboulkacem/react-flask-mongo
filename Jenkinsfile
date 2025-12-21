@@ -78,7 +78,7 @@ pipeline {
             echo '✅ Pipeline succeeded!'
         }
         failure {
-            echo '❌ Pipeline failed!'
+            echo '❌ Pipeline failed!' //tetstet
         }
     }
 }
