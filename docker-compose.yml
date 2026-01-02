@@ -1,7 +1,8 @@
+version: "3.9"
+
 services:
   frontend:
     build: ./frontend
-    # container_name: react  <-- SUPPRIMÉ
     ports:
       - "3000:3000"
     volumes:
@@ -9,11 +10,10 @@ services:
       - /app/node_modules
     networks:
       - frontend_net
-    tty: true
+      - backend_net
 
   backend:
     build: ./backend
-    # container_name: api  <-- SUPPRIMÉ
     ports:
       - "5000:5000"
     environment:
@@ -28,20 +28,25 @@ services:
 
   mongodb:
     image: mongo:7
-    # container_name: mongodb  <-- SUPPRIMÉ
     restart: unless-stopped
+    command: mongod --auth
     environment:
       MONGO_INITDB_ROOT_USERNAME: zakaria
       MONGO_INITDB_ROOT_PASSWORD: admin
       MONGO_INITDB_DATABASE: flaskdb
-    networks:
-      - backend_net
     volumes:
       - mongo_data:/data/db
+    networks:
+      - backend_net
 
 networks:
   frontend_net:
+    driver: bridge
   backend_net:
+    driver: bridge
 
 volumes:
   mongo_data:
+    driver: local
+  appdata:
+    driver: local
