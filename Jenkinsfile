@@ -1,84 +1,88 @@
 pipeline {
     agent any
-    
+
     environment {
-        DOCKER_USER_ID = 'zakaria227' 
+        // Docker Hub account
+        DOCKER_USER_ID = 'zakaria227'
+
+        // Images names
         FRONTEND_IMAGE = "${DOCKER_USER_ID}/react-flask-mongodb-frontend:latest"
-        BACKEND_IMAGE = "${DOCKER_USER_ID}/react-flask-mongodb-backend:latest"
+        BACKEND_IMAGE  = "${DOCKER_USER_ID}/react-flask-mongodb-backend:latest"
     }
-    
+
     stages {
-        stage('Checkout Git') {
+
+        stage('Checkout') {
             steps {
-                echo '📥 Pulling code from Git repository...'
-                // Cette commande récupère le code initialement
+                echo 'Pull du code depuis GitHub...'
                 checkout scm
-                
+
                 script {
-                    // Utilisation des credentials pour permettre le 'git pull' manuel sur repo privé
-                    withCredentials([usernamePassword(credentialsId: 'repo_github', passwordVariable: 'GIT_PASS', usernameVariable: 'GIT_USER')]) {
-                        try {
-                            // On construit l'URL avec les identifiants pour l'authentification
-                            sh "git pull https://${GIT_USER}:${GIT_PASS}@github.com/ZakariaAboulkacem/react-flask-mongo.git main"
-                        } catch (Exception e) {
-                            sh "git pull https://${GIT_USER}:${GIT_PASS}@github.com/ZakariaAboulkacem/react-flask-mongo.git master"
-                        }
-                    }
-                }
-            }
-        }
-        
-        stage('Build Docker Images') {
-            steps {
-                echo '🔨 Building Docker images...'
-                script {
-                    sh "docker build -t ${FRONTEND_IMAGE} ./frontend"
-                    sh "docker build -t ${BACKEND_IMAGE} ./backend"
-                    echo '✅ Docker images built successfully'
-                }
-            }
-        }
-        
-        stage('Run Local (docker compose)') {
-            steps {
-                echo '🚀 Starting services with docker compose...'
-                script {
-                    sh "docker compose down || true"
-                    sh "docker compose up -d --build"
-                    sleep(time: 10, unit: 'SECONDS')
-                    echo '✅ Services started successfully'
-                }
-            }
-        }
-        
-        stage('Push to Docker Hub') {
-            steps {
-                echo '📤 Pushing images to Docker Hub...'
-                script {
-                    withCredentials([usernamePassword(credentialsId: 'zakaria227-dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    // Pull manuel avec credentials (repo privé)
+                    withCredentials([
+                        usernamePassword(
+                            credentialsId: 'repo_github',
+                            usernameVariable: 'GIT_USER',
+                            passwordVariable: 'GIT_PASS'
+                        )
+                    ]) {
                         sh """
-                            echo "${DOCKER_PASS}" | docker login -u "${DOCKER_USER}" --password-stdin
-                            docker push ${FRONTEND_IMAGE}
-                            docker push ${BACKEND_IMAGE}
-                            docker logout
+                            git pull https://${GIT_USER}:${GIT_PASS}@github.com/ZakariaAboulkacem/react-flask-mongo.git main \
+                            || git pull https://${GIT_USER}:${GIT_PASS}@github.com/ZakariaAboulkacem/react-flask-mongo.git master
                         """
                     }
-                    echo '✅ Images pushed to Docker Hub successfully'
+                }
+            }
+        }
+
+        stage('Build Images') {
+            steps {
+                echo 'Construction des images Docker...'
+                sh "docker build -t ${FRONTEND_IMAGE} ./frontend"
+                sh "docker build -t ${BACKEND_IMAGE} ./backend"
+            }
+        }
+
+        stage('Run with Docker Compose') {
+            steps {
+                echo 'Lancement de l’application en local...'
+                sh "docker compose down || true"
+                sh "docker compose up -d --build"
+                sleep(time: 10, unit: 'SECONDS')
+            }
+        }
+
+        stage('Push Images') {
+            steps {
+                echo 'Envoi des images vers Docker Hub...'
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'zakaria227-dockerhub',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )
+                ]) {
+                    sh """
+                        echo "${DOCKER_PASS}" | docker login -u "${DOCKER_USER}" --password-stdin
+                        docker push ${FRONTEND_IMAGE}
+                        docker push ${BACKEND_IMAGE}
+                        docker logout
+                    """
                 }
             }
         }
     }
-    
+
     post {
         always {
-            echo '🧹 Cleaning up...'
+            echo 'Nettoyage des conteneurs...'
             sh 'docker compose down || true'
         }
         success {
-            echo '✅ Pipeline succeeded!'
+            echo 'Pipeline exécuté avec succès.'
         }
         failure {
-            echo '❌ Pipeline failed!' 
+            echo 'Erreur lors de l’exécution du pipeline.'
         }
     }
 }
