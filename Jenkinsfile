@@ -75,8 +75,7 @@ pipeline {
             sh 'docker compose down || true'
         }
         success {
-            echo '✅ Pipeline succeedede!'
-            echo '✅ Pipeline succeedede!'
+            echo '✅ Pipeline succeeded!'
         }
         failure {
             echo '❌ Pipeline failed!' 
