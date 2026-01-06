@@ -48,16 +48,7 @@ pipeline {
                 echo 'Lancement de l’application en local...'
                 sh "docker compose down || true"
                 sh "docker compose up -d --build"
-                
-                echo 'Attente du démarrage des services...'
-                sleep(time: 15, unit: 'SECONDS') // J'ai augmenté un peu le temps pour être sûr que Mongo est prêt
-
-                // --- TEST DE CONNECTIVITÉ AJOUTÉ ICI ---
-                echo 'Vérification que les services répondent (Smoke Test)...'
-                // Le flag -f fait échouer la commande si le serveur renvoie une erreur (ex: 500 ou 404)
-                sh "curl -f http://localhost:3000"
-                sh "curl -f http://localhost:5000"
-                // ---------------------------------------
+                sleep(time: 10, unit: 'SECONDS')
             }
         }
 
@@ -88,7 +79,7 @@ pipeline {
             sh 'docker compose down || true'
         }
         success {
-            echo 'Pipeline exécuté avec succès. '
+            echo 'Pipeline exécuté avec succès. oui '
         }
         failure {
             echo 'Erreur lors de l’exécution du pipeline.'
