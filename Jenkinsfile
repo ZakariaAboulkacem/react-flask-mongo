@@ -88,7 +88,7 @@ pipeline {
             sh 'docker compose down || true'
         }
         success {
-            echo 'Pipeline exécuté avec succès. oui '
+            echo 'Pipeline exécuté avec succès. '
         }
         failure {
             echo 'Erreur lors de l’exécution du pipeline.'
